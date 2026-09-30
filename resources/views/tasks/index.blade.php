@@ -97,15 +97,28 @@
 
             <div class="task-card-actions">
                 <a href="{{ route('tasks.edit', $task) }}">✏️ Edit</a>
-                <form action="{{ route('tasks.destroy', $task) }}" method="POST"
-                      onsubmit="return confirm('Delete this task?')">
+
+                <form action="{{ route('tasks.destroy', $task) }}" method="POST" class="delete-form">
                     @csrf
                     @method('DELETE')
-                    <button type="submit">🗑️ Delete</button>
+                    <button type="button" class="delete-trigger" data-task-name="{{ $task->task }}">🗑️ Delete</button>
                 </form>
             </div>
         </div>
     @endforeach
+</div>
+
+{{-- Modern Delete Confirmation Modal --}}
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-box">
+        <div class="modal-icon">🗑️</div>
+        <h5 class="modal-title">Delete this task?</h5>
+        <p class="modal-text">Are you sure you want to delete "<span id="deleteTaskName"></span>"? This action cannot be undone.</p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary flex-fill" id="cancelDelete">Cancel</button>
+            <button type="button" class="btn btn-delete-confirm flex-fill" id="confirmDelete">Delete</button>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -282,6 +295,83 @@
     .task-card-actions a:hover { color: var(--primary); }
     .task-card-actions button:hover { color: #ef4444; }
 
+    /* ---------- Modern Delete Modal ---------- */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(30, 27, 75, 0.45);
+        backdrop-filter: blur(3px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    .modal-overlay.show {
+        display: flex;
+        opacity: 1;
+    }
+
+    .modal-box {
+        background: #fff;
+        border-radius: 20px;
+        padding: 28px;
+        width: 90%;
+        max-width: 360px;
+        text-align: center;
+        box-shadow: 0 20px 50px rgba(30, 27, 75, 0.25);
+        transform: translateY(16px) scale(0.96);
+        transition: transform 0.2s ease;
+    }
+    .modal-overlay.show .modal-box {
+        transform: translateY(0) scale(1);
+    }
+
+    .modal-icon {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 14px;
+        border-radius: 16px;
+        background: #fee2e2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+    }
+
+    .modal-title {
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 8px;
+    }
+
+    .modal-text {
+        font-size: 0.85rem;
+        color: #6b6a91;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-delete-confirm {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        padding: 10px;
+        transition: all 0.2s ease;
+    }
+    .btn-delete-confirm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(239, 68, 68, 0.35);
+    }
+
     @media (max-width: 576px) {
         .stats-row { grid-template-columns: 1fr; }
         .task-grid { grid-template-columns: 1fr; }
@@ -289,5 +379,30 @@
         .filter-input { max-width: 100% !important; }
     }
 </style>
+
+<script>
+    let formToSubmit = null;
+
+    document.querySelectorAll('.delete-trigger').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            formToSubmit = btn.closest('form');
+            document.getElementById('deleteTaskName').textContent = btn.dataset.taskName;
+            document.getElementById('deleteModal').classList.add('show');
+        });
+    });
+
+    document.getElementById('cancelDelete').addEventListener('click', function () {
+        formToSubmit = null;
+        document.getElementById('deleteModal').classList.remove('show');
+    });
+
+    document.getElementById('confirmDelete').addEventListener('click', function () {
+        if (formToSubmit) formToSubmit.submit();
+    });
+
+    document.getElementById('deleteModal').addEventListener('click', function (e) {
+        if (e.target === this) this.classList.remove('show');
+    });
+</script>
 
 @endsection
